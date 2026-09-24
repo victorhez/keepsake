@@ -9,7 +9,9 @@ import "server-only";
  */
 
 const CATALOGUE = "https://hermes.pyth.network/v2/price_feeds";
-const HERMES = process.env.PYTH_HERMES_URL ?? "https://pyth.dourolabs.app/hermes";
+const HERMES_HOSTS = [process.env.PYTH_HERMES_URL, "https://pyth.dourolabs.app/hermes", "https://hermes.pyth.network"].filter(
+  (u): u is string => !!u,
+);
 
 export interface SessionState {
   isOpen: boolean;
@@ -77,12 +79,18 @@ async function latestPrices(symbols: string[]): Promise<Record<string, PythPrice
   }
 
   const query = wanted.map(([, id]) => `ids[]=${id}`).join("&");
-  const res = await fetch(`${HERMES}/v2/updates/price/latest?${query}&parsed=true&ignore_invalid_price_ids=true`, {
-    headers: { Authorization: `Bearer ${key}` },
-    next: { revalidate: 15 },
-  });
-  priceStatus = `hermes ${res.status}`;
-  if (!res.ok) return {};
+  let res: Response | null = null;
+  const tried: string[] = [];
+  for (const host of HERMES_HOSTS) {
+    res = await fetch(`${host}/v2/updates/price/latest?${query}&parsed=true&ignore_invalid_price_ids=true`, {
+      headers: { Authorization: `Bearer ${key}` },
+      next: { revalidate: 15 },
+    });
+    tried.push(`${new URL(host).host} ${res.status}`);
+    if (res.ok) break;
+  }
+  priceStatus = tried.join(", ");
+  if (!res?.ok) return {};
 
   const body = (await res.json()) as { parsed?: ParsedUpdate[] };
   const bySymbol = new Map(wanted.map(([s, id]) => [id.replace(/^0x/, ""), s]));
