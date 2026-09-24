@@ -59,8 +59,11 @@ async function nyseSession(): Promise<SessionState> {
   return { isOpen: false, nextOpen: null, nextClose: null };
 }
 
+/** Last outcome of the price request, reported without any secret material. */
+let priceStatus = "not configured";
+
 async function latestPrices(symbols: string[]): Promise<Record<string, PythPrice>> {
-  const key = process.env.PYTH_API_KEY;
+  const key = process.env.PYTH_API_KEY?.trim().replace(/^["']|["']$/g, "");
   if (!key || symbols.length === 0) return {};
 
   const ids = await feedIds();
@@ -68,13 +71,17 @@ async function latestPrices(symbols: string[]): Promise<Record<string, PythPrice
     const id = ids.get(s);
     return id ? [[s, id] as const] : [];
   });
-  if (wanted.length === 0) return {};
+  if (wanted.length === 0) {
+    priceStatus = "feed catalogue unavailable";
+    return {};
+  }
 
   const query = wanted.map(([, id]) => `ids[]=${id}`).join("&");
   const res = await fetch(`${HERMES}/v2/updates/price/latest?${query}&parsed=true&ignore_invalid_price_ids=true`, {
     headers: { Authorization: `Bearer ${key}` },
     next: { revalidate: 15 },
   });
+  priceStatus = `hermes ${res.status}`;
   if (!res.ok) return {};
 
   const body = (await res.json()) as { parsed?: ParsedUpdate[] };
@@ -94,6 +101,12 @@ async function latestPrices(symbols: string[]): Promise<Record<string, PythPrice
 }
 
 export async function getPythSnapshot(symbols: string[]) {
-  const [session, prices] = await Promise.all([nyseSession(), latestPrices(symbols).catch(() => ({}))]);
-  return { session, prices: prices as Record<string, PythPrice>, live: Object.keys(prices).length > 0 };
+  const [session, prices] = await Promise.all([
+    nyseSession(),
+    latestPrices(symbols).catch((err) => {
+      priceStatus = err instanceof Error ? err.name : "error";
+      return {};
+    }),
+  ]);
+  return { session, prices: prices as Record<string, PythPrice>, live: Object.keys(prices).length > 0, status: priceStatus };
 }

@@ -38,6 +38,7 @@ export interface MarketSnapshot {
   solPrice: number;
   session: SessionState;
   pyth: boolean;
+  pythStatus: string;
   updatedAt: number;
 }
 
@@ -185,6 +186,7 @@ export async function getMarket(): Promise<MarketSnapshot> {
     solPrice: prices[SOL_MINT]?.usdPrice ?? 0,
     session: pyth.session,
     pyth: pyth.live,
+    pythStatus: pyth.status,
     updatedAt: Date.now(),
   };
 }
