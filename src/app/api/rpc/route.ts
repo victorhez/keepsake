@@ -5,11 +5,27 @@
  * app down.
  */
 
-const UPSTREAMS = [
-  process.env.SOLANA_RPC_URL,
-  "https://api.mainnet-beta.solana.com",
-  "https://solana-rpc.publicnode.com",
-].filter((u): u is string => !!u);
+function parseUrl(value: string | undefined): URL | null {
+  const cleaned = value?.trim().replace(/^["']|["']$/g, "");
+  if (!cleaned) return null;
+  try {
+    const url = new URL(cleaned);
+    return url.protocol === "https:" || url.protocol === "http:" ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+const configured = parseUrl(process.env.SOLANA_RPC_URL);
+if (process.env.SOLANA_RPC_URL && !configured) {
+  console.error("SOLANA_RPC_URL is set but is not a valid http(s) URL; using public RPC nodes.");
+}
+
+const UPSTREAMS: URL[] = [
+  configured,
+  parseUrl("https://api.mainnet-beta.solana.com"),
+  parseUrl("https://solana-rpc.publicnode.com"),
+].filter((u): u is URL => !!u);
 
 const ALLOWED = new Set([
   "getAccountInfo",
@@ -63,9 +79,9 @@ export async function POST(req: Request) {
       if (res.ok && !RETRYABLE.test(text)) {
         return new Response(text, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
       }
-      lastError = `${new URL(upstream).host} answered ${res.status}`;
+      lastError = `${upstream.host} answered ${res.status}`;
     } catch (err) {
-      lastError = `${new URL(upstream).host}: ${err instanceof Error ? err.message : "request failed"}`;
+      lastError = `${upstream.host}: ${err instanceof Error ? err.message : "request failed"}`;
     }
   }
 
