@@ -17,9 +17,11 @@ interface Props {
   signature?: string;
   onAnother?: () => void;
   celebrate?: boolean;
+  /** A dry run: nothing was bought and the link opens a sample gift. */
+  preview?: boolean;
 }
 
-export function ShareGift({ link, note, asset, shares, signature, onAnother, celebrate = true }: Props) {
+export function ShareGift({ link, note, asset, shares, signature, onAnother, celebrate = true, preview = false }: Props) {
   const [copied, setCopied] = useState(false);
   const canShare = useSyncExternalStore(
     () => () => {},
@@ -65,19 +67,28 @@ export function ShareGift({ link, note, asset, shares, signature, onAnother, cel
 
   return (
     <>
+      {preview && (
+        <div className="no-print mx-auto mt-8 max-w-6xl px-4 sm:px-6">
+          <div className="rounded-2xl border border-gold/40 bg-gold/10 px-5 py-3.5 text-[0.9rem]">
+            <span className="font-semibold">Preview.</span> Nothing was bought or sent. This link opens a sample of what your
+            recipient will see, priced live.
+          </div>
+        </div>
+      )}
       <div className="no-print mx-auto grid max-w-6xl items-start gap-12 px-4 pb-24 pt-10 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:pt-16">
         <motion.div initial={{ opacity: 0, scale: 0.94, rotate: -3 }} animate={{ opacity: 1, scale: 1, rotate: -1.5 }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
           {card}
         </motion.div>
 
         <div>
-          <p className="eyebrow text-up!">Wrapped and ready</p>
+          <p className="eyebrow text-up!">{preview ? "Preview ready" : "Wrapped and ready"}</p>
           <h1 className="font-serif mt-3 text-[clamp(2.4rem,5vw,3.6rem)] leading-[1] tracking-tight">
             Now send it {note.to ? <>to {note.to}</> : <>their way</>}.
           </h1>
           <p className="mt-4 leading-relaxed text-ink-2">
-            This link is the gift. Whoever opens it first can claim it, so send it straight to them. You can always find it again
-            under My gifts, and take it back if it isn’t opened.
+            {preview
+              ? "When you wrap a real gift, this link is the gift itself. Open it now to see exactly what they’ll see."
+              : "This link is the gift. Whoever opens it first can claim it, so send it straight to them. You can always find it again under My gifts, and take it back if it isn’t opened."}
           </p>
 
           <div className="mt-7 rounded-2xl border border-line bg-card p-2 pl-4">
@@ -124,9 +135,14 @@ export function ShareGift({ link, note, asset, shares, signature, onAnother, cel
                 Wrap another gift
               </button>
             )}
-            <a href="/gifts" className="text-ink-2 hover:text-ink">
-              My gifts
+            <a href={link} target="_blank" rel="noreferrer" className="text-ink-2 hover:text-ink">
+              Open it as the recipient ↗
             </a>
+            {!preview && (
+              <a href="/gifts" className="text-ink-2 hover:text-ink">
+                My gifts
+              </a>
+            )}
             {signature && (
               <a href={`https://solscan.io/tx/${signature}`} target="_blank" rel="noreferrer" className="text-ink-2 hover:text-ink">
                 View transaction ↗

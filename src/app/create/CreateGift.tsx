@@ -46,7 +46,8 @@ interface Done {
   link: string;
   note: GiftNote;
   shares: number;
-  signature: string;
+  signature?: string;
+  preview?: boolean;
 }
 
 /** Input amount in the pay token's base units. */
@@ -233,6 +234,26 @@ export function CreateGift() {
     }
   }
 
+  function preview() {
+    if (!asset) return;
+    const note = stampNote({
+      to: to.trim(),
+      from: from.trim(),
+      message: message.trim(),
+      theme: theme.id,
+      usd: Math.round((outValue ?? amount) * 100) / 100,
+      mint: asset.mint,
+    });
+    setDone({
+      link: demoLink(window.location.origin, note),
+      note,
+      shares: outShares ?? (outValue ?? amount) / asset.price,
+      preview: true,
+    });
+    setStage("done");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   if (stage === "done" && done && asset) {
     return (
       <ShareGift
@@ -241,6 +262,7 @@ export function CreateGift() {
         asset={asset}
         shares={done.shares}
         signature={done.signature}
+        preview={done.preview}
         onAnother={() => {
           setDone(null);
           setStage("compose");
@@ -530,6 +552,14 @@ export function CreateGift() {
                           : `Wrap ${usd(amount, { cents: amount % 1 !== 0 })} gift`}
               </motion.span>
             </AnimatePresence>
+          </button>
+          <button
+            type="button"
+            onClick={preview}
+            disabled={!asset || busy}
+            className="mt-3 w-full text-center text-[0.9rem] font-medium text-ink-2 underline decoration-line-strong underline-offset-4 hover:text-ink disabled:opacity-40"
+          >
+            Or try the whole flow without paying
           </button>
           {stage === "unlocking" && (
             <p className="mt-3 text-center text-[0.82rem] text-muted">
