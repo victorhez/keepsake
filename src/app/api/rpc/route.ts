@@ -16,10 +16,19 @@ function parseUrl(value: string | undefined): URL | null {
   }
 }
 
-const configured = parseUrl(process.env.SOLANA_RPC_URL);
-if (process.env.SOLANA_RPC_URL && !configured) {
-  console.error("SOLANA_RPC_URL is set but is not a valid http(s) URL; using public RPC nodes.");
+/** Accepts a full RPC URL, or a bare Helius API key. */
+function configuredUpstream(value: string | undefined): URL | null {
+  const url = parseUrl(value);
+  if (url) return url;
+  const key = value?.trim().replace(/^["']|["']$/g, "");
+  if (key && /^[A-Za-z0-9_-]{16,}$/.test(key)) {
+    return new URL(`https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(key)}`);
+  }
+  if (value) console.error("SOLANA_RPC_URL is neither a URL nor an API key; using public RPC nodes.");
+  return null;
 }
+
+const configured = configuredUpstream(process.env.SOLANA_RPC_URL);
 
 const UPSTREAMS: URL[] = [
   configured,
@@ -77,7 +86,9 @@ export async function POST(req: Request) {
       });
       const text = await res.text();
       if (res.ok && !RETRYABLE.test(text)) {
-        return new Response(text, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
+        return new Response(text, {
+          headers: { "content-type": "application/json", "cache-control": "no-store", "x-rpc-upstream": upstream.host },
+        });
       }
       lastError = `${upstream.host} answered ${res.status}`;
     } catch (err) {
