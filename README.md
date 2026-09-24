@@ -11,7 +11,9 @@ They open the link, tap claim, and it’s theirs. No brokerage account, no paper
 
 Built on Solana with tokenized stocks from **xStocks** and **PreStocks**, routed by **Jupiter**, with market data from **Pyth Network**.
 
-[Open a sample gift](#try-it) · [How it works](#how-it-works) · [Architecture](#architecture) · [Security model](#security-model)
+**[keepsake-gifts.vercel.app](https://keepsake-gifts.vercel.app)**
+
+[Open a sample gift](https://keepsake-gifts.vercel.app/g#demo) · [How it works](#how-it-works) · [Architecture](#architecture) · [Security model](#security-model)
 
 </div>
 
@@ -43,9 +45,9 @@ Keepsake charges no fee. Senders pay the stock price through Jupiter’s best ro
 
 ## Try it
 
-- **Send a gift:** `/create`. Connect Phantom, Solflare, Backpack or any Wallet Standard wallet.
-- **See what a recipient sees:** `/g#demo` opens a sample gift built from live prices, with no funds involved.
-- **Manage your gifts:** `/gifts` shows everything you’ve wrapped, its status and live value, with one-tap reclaim.
+- **Send a gift:** [keepsake-gifts.vercel.app/create](https://keepsake-gifts.vercel.app/create). Connect Phantom, Solflare, Backpack or any Wallet Standard wallet.
+- **See what a recipient sees:** [open a sample gift](https://keepsake-gifts.vercel.app/g#demo), which opens a sample gift built from live prices, with no funds involved.
+- **Manage your gifts:** [My gifts](https://keepsake-gifts.vercel.app/gifts) shows everything you’ve wrapped, its status and live value, with one-tap reclaim.
 
 ## How it works
 
